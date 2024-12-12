@@ -1,0 +1,112 @@
+/* General layout */
+.tests-container {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+  space-y: 16px;
+}
+
+.tests-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* Subject card styles */
+.subject-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.subject-toggle-button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: #ffffff;
+  cursor: pointer;
+  border: none;
+  font-size: 1rem;
+}
+
+.subject-toggle-button:hover {
+  background-color: #f5f5f5;
+}
+
+.subject-icon {
+  height: 16px;
+  width: 16px;
+}
+
+/* Search input */
+.search-container {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 8px;
+  top: 10px;
+  height: 16px;
+  width: 16px;
+  color: #888;
+}
+
+.search-input {
+  width: 100%;
+  padding-left: 32px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  height: 32px;
+  font-size: 1rem;
+}
+
+.clear-button {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.clear-icon {
+  height: 16px;
+  width: 16px;
+  color: #888;
+}
+
+/* Category and tests display */
+.category-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.test-button {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #ddd;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.test-button:hover {
+  background-color: #f5f5f5;
+}
+
+.view-all-button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+  font-size: 1rem;
+}
