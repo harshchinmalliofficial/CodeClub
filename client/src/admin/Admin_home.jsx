@@ -2,8 +2,8 @@ import { useState } from "react";
 import AdminNavbar from "./Admin_components/AdminNavbar.jsx";
 import axios from "axios";
 import Loading from "../Loading.jsx";
-// import Unauthorized from "./unAuthorised.jsx";
-import UnAuthorised from "./unAuthorised.jsx"; // Correct
+// import UnAuthorised from "./unAuthorised.jsx"; // Correct
+import Unauthorized from "./unAuthorised.jsx";
 
 function Admin_home() {
   const baseUrl = import.meta.env.VITE_USER_SERVER_BASE_URL;
@@ -58,7 +58,7 @@ function Admin_home() {
   if (!token) {
     return (
       <div>
-        <UnAuthorised />
+        <Unauthorized />
       </div>
     );
   }
