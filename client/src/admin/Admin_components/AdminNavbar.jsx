@@ -32,11 +32,19 @@ function AdminNavbar() {
                 UploadTest
               </span>
             </Link>
+
             <Link className="nav-link" to="/admin/qna">
               <span className="nav-link-text" style={{ fontFamily: "inter" }}>
                 Teachers AI
               </span>
             </Link>
+
+            <Link className="nav-link" to="/admin/events">
+              <span className="nav-link-text" style={{ fontFamily: "inter" }}>
+                Events
+              </span>
+            </Link>
+
             <Link
               className="nav-link"
               to="/admin/login"

@@ -18,6 +18,7 @@ import OpenAIApi from "openai";
 import Configuration from "openai";
 import Test from "./quizdata.js";
 import UserAttempt from "./UserAttempt.js";
+import Events from "./event.js";
 
 import pm2 from "pm2"; // Added PM2 library
 import {
@@ -1003,124 +1004,124 @@ app.post("/api/userAttempts", async (req, res) => {
   }
 });
 
-app.post("/generate-responses", async (req, res) => {
-  try {
-    const { userId, testId, userAnswers } = req.body;
-    // console.log(req.body);
+// app.post("/generate-responses", async (req, res) => {
+//   try {
+//     const { userId, testId, userAnswers } = req.body;
+//     // console.log(req.body);
 
-    // Input validation
-    if (!userId || !testId || !Array.isArray(userAnswers)) {
-      return res.status(400).json({
-        error:
-          "Invalid input. Provide a valid userId, testId, and userAnswers array.",
-      });
-    }
+//     // Input validation
+//     if (!userId || !testId || !Array.isArray(userAnswers)) {
+//       return res.status(400).json({
+//         error:
+//           "Invalid input. Provide a valid userId, testId, and userAnswers array.",
+//       });
+//     }
 
-    console.log("Received request with testId:", testId);
+//     console.log("Received request with testId:", testId);
 
-    // Clean and validate testId
-    const cleanTestId = testId.trim();
-    if (!mongoose.Types.ObjectId.isValid(cleanTestId)) {
-      return res.status(400).json({ error: "Invalid testId format." });
-    }
+//     // Clean and validate testId
+//     const cleanTestId = testId.trim();
+//     if (!mongoose.Types.ObjectId.isValid(cleanTestId)) {
+//       return res.status(400).json({ error: "Invalid testId format." });
+//     }
 
-    // Fetch the test from the database
-    const DbTest = await Test.findOne({ _id: cleanTestId }).lean();
-    if (!DbTest) {
-      return res.status(404).json({ error: "Test not found." });
-    }
-    console.log("Test retrieved:", DbTest);
+//     // Fetch the test from the database
+//     const DbTest = await Test.findOne({ _id: cleanTestId }).lean();
+//     if (!DbTest) {
+//       return res.status(404).json({ error: "Test not found." });
+//     }
+//     console.log("Test retrieved:", DbTest);
 
-    // Prepare quiz details
-    const quizDetails = DbTest.quiz.map((q, index) => {
-      const userAnswer = userAnswers.find(
-        (ua) => ua.questionIndex === index
-      )?.selectedAnswer;
-      const isCorrect = userAnswer === q.correctAnswer;
-      const explanation = isCorrect
-        ? `You are correct! The answer to "${q.question}" is "${q.correctAnswer}".`
-        : `You are incorrect. The correct answer to "${q.question}" is "${q.correctAnswer}".`;
+//     // Prepare quiz details
+//     const quizDetails = DbTest.quiz.map((q, index) => {
+//       const userAnswer = userAnswers.find(
+//         (ua) => ua.questionIndex === index
+//       )?.selectedAnswer;
+//       const isCorrect = userAnswer === q.correctAnswer;
+//       const explanation = isCorrect
+//         ? `You are correct! The answer to "${q.question}" is "${q.correctAnswer}".`
+//         : `You are incorrect. The correct answer to "${q.question}" is "${q.correctAnswer}".`;
 
-      return {
-        question: q.question,
-        options: q.options,
-        correctAnswer: q.correctAnswer,
-        userAnswer: userAnswer || "No answer provided",
-        isCorrect,
-        explanation,
-      };
-    });
+//       return {
+//         question: q.question,
+//         options: q.options,
+//         correctAnswer: q.correctAnswer,
+//         userAnswer: userAnswer || "No answer provided",
+//         isCorrect,
+//         explanation,
+//       };
+//     });
 
-    // Generate the prompt
-    const prompt = `
-      Topic: ${DbTest.topic}
-      NOTE: Respond in JSON format.
-      Data: ${JSON.stringify(quizDetails, null, 2)}
-    `;
+//     // Generate the prompt
+//     const prompt = `
+//       Topic: ${DbTest.topic}
+//       NOTE: Respond in JSON format.
+//       Data: ${JSON.stringify(quizDetails, null, 2)}
+//     `;
 
-    try {
-      // Chat model interaction
-      const chatSession = model.startChat({ generationConfig, history: [] });
-      const result = await chatSession.sendMessage(prompt);
+//     try {
+//       // Chat model interaction
+//       const chatSession = model.startChat({ generationConfig, history: [] });
+//       const result = await chatSession.sendMessage(prompt);
 
-      // Extract JSON response
-      const rawText = result.response.text();
-      const jsonMatch = rawText.match(/\[.*\]/s);
-      const questions = JSON.parse(jsonMatch?.[0] || "[]");
+//       // Extract JSON response
+//       const rawText = result.response.text();
+//       const jsonMatch = rawText.match(/\[.*\]/s);
+//       const questions = JSON.parse(jsonMatch?.[0] || "[]");
 
-      console.log("Generated response:", questions);
+//       console.log("Generated response:", questions);
 
-      // Calculate score
-      const score = quizDetails.filter((q) => q.isCorrect).length;
-      console.log(score);
+//       // Calculate score
+//       const score = quizDetails.filter((q) => q.isCorrect).length;
+//       console.log(score);
 
-      const totalQuestions = quizDetails.length;
+//       const totalQuestions = quizDetails.length;
 
-      // Add explanations to user answers
-      const enhancedUserAnswers = userAnswers.map((ua) => {
-        const matchingQuiz = quizDetails[ua.questionIndex];
-        return {
-          ...ua,
-          description: matchingQuiz
-            ? matchingQuiz.explanation
-            : "No explanation available",
-        };
-      });
+//       // Add explanations to user answers
+//       const enhancedUserAnswers = userAnswers.map((ua) => {
+//         const matchingQuiz = quizDetails[ua.questionIndex];
+//         return {
+//           ...ua,
+//           description: matchingQuiz
+//             ? matchingQuiz.explanation
+//             : "No explanation available",
+//         };
+//       });
 
-      // Save the user attempt
-      const newAttempt = new UserAttempt({
-        userId,
-        testId,
-        score,
-        totalQuestions,
-        userAnswers: enhancedUserAnswers,
-      });
-      await newAttempt.save();
+//       // Save the user attempt
+//       const newAttempt = new UserAttempt({
+//         userId,
+//         testId,
+//         score,
+//         totalQuestions,
+//         userAnswers: enhancedUserAnswers,
+//       });
+//       await newAttempt.save();
 
-      // Respond with success and generated data
-      res.status(201).json({
-        message: "Response generated and user attempt saved successfully.",
-        response: questions,
-      });
-    } catch (modelError) {
-      console.error("Error during chat model interaction:", modelError);
-      res
-        .status(500)
-        .json({ error: "Failed to process the chat model response." });
-    }
-  } catch (error) {
-    console.error("Error generating response and saving attempt:", error);
+//       // Respond with success and generated data
+//       res.status(201).json({
+//         message: "Response generated and user attempt saved successfully.",
+//         response: questions,
+//       });
+//     } catch (modelError) {
+//       console.error("Error during chat model interaction:", modelError);
+//       res
+//         .status(500)
+//         .json({ error: "Failed to process the chat model response." });
+//     }
+//   } catch (error) {
+//     console.error("Error generating response and saving attempt:", error);
 
-    // Detailed error responses
-    if (error instanceof mongoose.Error.ValidationError) {
-      res.status(400).json({ error: "Validation error in request data." });
-    } else if (error instanceof mongoose.Error.CastError) {
-      res.status(400).json({ error: "Invalid testId format." });
-    } else {
-      res.status(500).json({ error: "An internal server error occurred." });
-    }
-  }
-});
+//     // Detailed error responses
+//     if (error instanceof mongoose.Error.ValidationError) {
+//       res.status(400).json({ error: "Validation error in request data." });
+//     } else if (error instanceof mongoose.Error.CastError) {
+//       res.status(400).json({ error: "Invalid testId format." });
+//     } else {
+//       res.status(500).json({ error: "An internal server error occurred." });
+//     }
+//   }
+// });
 
 // app.post("/generate-responses", async (req, res) => {
 //   try {
@@ -1277,3 +1278,244 @@ app.post("/generate-responses", async (req, res) => {
 //     }
 //   }
 // });
+app.post("/generate-responses", async (req, res) => {
+  try {
+    const { userId, testId, userAnswers } = req.body;
+
+    // Input validation
+    if (!userId || !testId || !Array.isArray(userAnswers)) {
+      return res.status(400).json({
+        error:
+          "Invalid input. Provide a valid userId, testId, and userAnswers array.",
+      });
+    }
+
+    console.log("Received request with testId:", testId);
+
+    // Clean and validate testId
+    const cleanTestId = testId.trim();
+    if (!mongoose.Types.ObjectId.isValid(cleanTestId)) {
+      return res.status(400).json({ error: "Invalid testId format." });
+    }
+
+    // Fetch the test from the database
+    const DbTest = await Test.findOne({ _id: cleanTestId }).lean();
+    if (!DbTest) {
+      return res.status(404).json({ error: "Test not found." });
+    }
+    console.log("Test retrieved:", DbTest);
+
+    // Prepare quiz details
+    const quizDetails = DbTest.quiz.map((q, index) => {
+      const userAnswer = userAnswers.find(
+        (ua) => ua.questionIndex === index
+      )?.selectedAnswer;
+      const isCorrect = userAnswer === q.correctAnswer;
+
+      return {
+        question: q.question,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        userAnswer: userAnswer || "No answer provided",
+        isCorrect,
+      };
+    });
+
+    // Extremely detailed prompt for generating comprehensive explanations
+    const prompt = `  Topic: ${DbTest.topic}
+      IMPORTANT INSTRUCTIONS:
+      - Provide a COMPREHENSIVE explanation for EACH question
+      - If the answer is CORRECT:
+        * Elaborate on WHY the answer is correct
+        * Provide 2-3 detailed technical or contextual insights
+        * Explain the significance of the correct answer
+      - If the answer is INCORRECT:
+        * Clearly explain why the selected answer is wrong in only three lines 
+        * Provide the CORRECT answer with a detailed explanation
+        * Highlight the key differences or misconceptions
+      - Explanations should be:
+        * Minimum 3-4 sentences long
+        * Technically precise
+        * Educational and informative
+        * Use professional, clear language
+
+      REQUIRED OUTPUT FORMAT:
+      [
+        {
+          "question": "Original question text",
+          "userAnswer": "User's selected answer",
+          "correctAnswer": "Correct answer",
+          "explanation": "Detailed, comprehensive explanation",
+          "isCorrect": true/false
+        },
+        ...
+      ]
+
+      QUIZ DETAILS: ${JSON.stringify(quizDetails, null, 2)}
+    `;
+
+    try {
+      // Chat model interaction
+      const chatSession = model.startChat({ generationConfig, history: [] });
+      const result = await chatSession.sendMessage(prompt);
+
+      // Extract JSON response
+      const rawText = result.response.text();
+      const jsonMatch = rawText.match(/\[.*\]/s);
+      const explanations = JSON.parse(jsonMatch?.[0] || "[]");
+
+      console.log("Generated explanations:", explanations);
+
+      // Merge explanations with quiz details
+      const quizDetailsWithExplanations = quizDetails.map((quiz, index) => {
+        const explanation =
+          explanations[index]?.explanation ||
+          `Comprehensive explanation unavailable for: ${quiz.question}. 
+
+A virus is a type of malicious software that can replicate itself and spread to other computers. Unlike other malware types, viruses have the unique ability to self-propagate by attaching to legitimate program files and spreading when those files are executed. This replication mechanism allows viruses to quickly infect multiple systems within a network, potentially causing significant damage to computer systems and data integrity.`;
+
+        return {
+          ...quiz,
+          explanation: explanation,
+        };
+      });
+
+      // Calculate score
+      const score = quizDetails.filter((q) => q.isCorrect).length;
+      console.log(score);
+
+      const totalQuestions = quizDetails.length;
+
+      // Add explanations to user answers
+      const enhancedUserAnswers = userAnswers.map((ua) => {
+        const matchingQuiz = quizDetailsWithExplanations[ua.questionIndex];
+        return {
+          ...ua,
+          description: matchingQuiz
+            ? matchingQuiz.explanation
+            : "Detailed explanation not available",
+        };
+      });
+
+      // Save the user attempt
+      const newAttempt = new UserAttempt({
+        userId,
+        testId,
+        score,
+        totalQuestions,
+        userAnswers: enhancedUserAnswers,
+      });
+      await newAttempt.save();
+
+      // Respond with success and generated data
+      res.status(201).json({
+        message: "Response generated and user attempt saved successfully.",
+        response: quizDetailsWithExplanations,
+      });
+    } catch (modelError) {
+      console.error("Error during chat model interaction:", modelError);
+      res
+        .status(500)
+        .json({ error: "Failed to process the chat model response." });
+    }
+  } catch (error) {
+    console.error("Error generating response and saving attempt:", error);
+
+    // Detailed error responses
+    if (error instanceof mongoose.Error.ValidationError) {
+      res.status(400).json({ error: "Validation error in request data." });
+    } else if (error instanceof mongoose.Error.CastError) {
+      res.status(400).json({ error: "Invalid testId format." });
+    } else {
+      res.status(500).json({ error: "An internal server error occurred." });
+    }
+  }
+});
+app.get("/leaderboard", async (req, res) => {
+  try {
+    // Aggregate user attempts to calculate total scores
+    const leaderboardData = await UserAttempt.aggregate([
+      // Lookup to get user details
+      {
+        $lookup: {
+          from: "users", // Make sure this matches your users collection name
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      // Unwind the user details
+      {
+        $unwind: "$userDetails",
+      },
+      // Group by user and calculate total score
+      {
+        $group: {
+          _id: "$userId",
+          studentName: { $first: "$userDetails.name" }, // Assumes the user model has a 'name' field
+          totalScore: { $sum: "$score" },
+          totalTestsTaken: { $sum: 1 },
+        },
+      },
+      // Sort by total score in descending order
+      {
+        $sort: { totalScore: -1 },
+      },
+      // Project the final shape of the result
+      {
+        $project: {
+          _id: 0,
+          student: "$studentName",
+          totalScore: "$totalScore",
+          totalTestsTaken: "$totalTestsTaken",
+        },
+      },
+    ]);
+
+    // Send the leaderboard data
+    res.json({
+      success: true,
+      leaderboard: leaderboardData,
+    });
+  } catch (error) {
+    console.error("Leaderboard fetch error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching leaderboard",
+      error: error.message,
+    });
+  }
+});
+
+// GET all events
+app.get("/getEVE", async (req, res) => {
+  try {
+    const events = await Events.find();
+    res.status(200).json(events);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching events", error });
+  }
+});
+
+// POST a new event
+app.post("/Addevents", async (req, res) => {
+  try {
+    const { title, start, end, type } = req.body;
+    console.log(req.body);
+
+    // Validate incoming data
+    if (!title || !start || !end || !type) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Create a new event
+    const newEvent = new Events({ title, start, end, eventType: type });
+    const savedEvent = await newEvent.save();
+
+    res.status(201).json(savedEvent);
+  } catch (error) {
+    console.log(error.message);
+
+    res.status(500).json({ message: "Error creating event", error });
+  }
+});

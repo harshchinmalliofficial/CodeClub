@@ -10,6 +10,8 @@ import Redeem from "../pages/Redeem.jsx";
 import Tests from "../pages/Tests.jsx";
 import Qna from "../admin/Qna.jsx";
 import UploadTest from "../admin/UploadTest.jsx";
+// import Calendar from "@/admin/Events";
+import MyCalendar from "@/admin/Events";
 // import { Upload } from "lucide-react";
 
 function Routess() {
@@ -27,6 +29,7 @@ function Routess() {
         <Route path="/tests" element={<Tests />} />
         <Route path="/admin/qna" element={<Qna />} />
         <Route path="/admin/uploadTest" element={<UploadTest />} />
+        <Route path="/admin/events" element={<MyCalendar />} />
       </Routes>
     </>
   );

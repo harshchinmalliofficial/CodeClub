@@ -1,9 +1,6 @@
-// "use client";
-
-// import { useState, useEffect, useCallback } from "react";
+// import React, { useState, useEffect, useCallback } from "react";
 // import axios from "axios";
-// import Navbar from "@/components/Navbar";
-// import { ChevronRightIcon } from "@heroicons/react/24/solid";
+// import { ChevronRightIcon, CheckCircle, XCircle, Calendar } from "lucide-react";
 // import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // import { Button } from "@/components/ui/button";
 // import {
@@ -14,13 +11,13 @@
 //   Legend,
 //   Tooltip,
 // } from "recharts";
-// import { CheckCircle, XCircle, Calendar } from "lucide-react";
 // import {
 //   Tooltip as TooltipComponent,
 //   TooltipContent,
 //   TooltipProvider,
 //   TooltipTrigger,
 // } from "@/components/ui/tooltip";
+// import Navbar from "@/components/Navbar";
 
 // const COLORS = ["#A94442", "#FFA07A"];
 
@@ -30,7 +27,7 @@
 //     { name: "Incorrect", value: totalQuestions * 10 - score },
 //   ];
 
-//   const percentage = Math.round((score / (totalQuestions * 10)) * 100);
+//   const percentage = Math.round((score / totalQuestions) * 100);
 
 //   return (
 //     <Card className="w-full max-w-3xl mx-auto mb-8">
@@ -45,7 +42,7 @@
 //             {percentage}%
 //           </div>
 //           <div className="text-lg text-gray-600 mb-6">
-//             Score: {score} out of {totalQuestions * 10}
+//             Score: {score} out of {totalQuestions}
 //           </div>
 //           <div className="w-full h-[400px]">
 //             <ResponsiveContainer width="100%" height="100%">
@@ -77,7 +74,7 @@
 //   );
 // };
 
-// const DetailedTestResults = ({ results }) => {
+// const DetailedTestResults = ({ results, questions }) => {
 //   if (!results || results.length === 0) {
 //     return <div>No results available</div>;
 //   }
@@ -87,37 +84,50 @@
 //       <h3 className="text-2xl font-bold text-[#A94442] mb-4">
 //         Detailed Results
 //       </h3>
-//       {results.map((result, index) => (
-//         <Card
-//           key={index}
-//           className={result.isCorrect ? "border-green-500" : "border-red-500"}
-//         >
-//           <CardHeader>
-//             <CardTitle className="flex items-center text-lg">
-//               {result.isCorrect ? (
-//                 <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
-//               ) : (
-//                 <XCircle className="w-6 h-6 text-red-500 mr-2" />
-//               )}
-//               Question {index + 1}
-//             </CardTitle>
-//           </CardHeader>
-//           <CardContent>
-//             <p className="mb-2">
-//               <strong>Question:</strong> {result.question}
-//             </p>
-//             <p className="mb-2">
-//               <strong>Your Answer:</strong> {result.userAnswer}
-//             </p>
-//             <p className="mb-2">
-//               <strong>Correct Answer:</strong> {result.correctAnswer}
-//             </p>
-//             <p className="mt-4">
-//               <strong>Explanation:</strong> {result.explanation}
-//             </p>
-//           </CardContent>
-//         </Card>
-//       ))}
+//       {results.map((result, index) => {
+//         const question = questions[result.questionIndex];
+//         if (!question) {
+//           console.error(`Question not found for index ${result.questionIndex}`);
+//           return null;
+//         }
+//         const isCorrect = result.selectedAnswer === question.correctAnswer;
+//         return (
+//           <Card
+//             key={index}
+//             className={isCorrect ? "border-green-500" : "border-red-500"}
+//           >
+//             <CardHeader>
+//               <CardTitle className="flex items-center text-lg">
+//                 {isCorrect ? (
+//                   <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
+//                 ) : (
+//                   <XCircle className="w-6 h-6 text-red-500 mr-2" />
+//                 )}
+//                 Question {result.questionIndex + 1}
+//               </CardTitle>
+//             </CardHeader>
+//             <CardContent>
+//               <p className="mb-2">
+//                 <strong>Question:</strong> {question.question}
+//               </p>
+//               <p className="mb-2">
+//                 <strong>Your Answer:</strong> {result.selectedAnswer}
+//               </p>
+//               <p className="mb-2">
+//                 <strong>Correct Answer:</strong> {question.correctAnswer}
+//               </p>
+//               <p className="mt-4">
+//                 <strong>Explanation:</strong>{" "}
+//                 {isCorrect
+//                   ? "Your answer is correct!"
+//                   : `The correct answer is "${question.correctAnswer}". ${
+//                       question.explanation || ""
+//                     }`}
+//               </p>
+//             </CardContent>
+//           </Card>
+//         );
+//       })}
 //     </div>
 //   );
 // };
@@ -173,6 +183,7 @@
 //   const [userProfile, setUserProfile] = useState(null);
 //   const [detailedResults, setDetailedResults] = useState(null);
 //   const [isLoading, setIsLoading] = useState(false);
+//   const [attemptDate, setAttemptDate] = useState(null);
 //   const authToken = localStorage.getItem("authToken");
 
 //   const fetchTests = useCallback(async () => {
@@ -194,7 +205,6 @@
 //               testId: test._id,
 //             }
 //           );
-//           console.log(attemptResponse.data);
 //           return { ...test, attempt: attemptResponse.data };
 //         })
 //       );
@@ -238,11 +248,13 @@
 //     if (test.attempt && test.attempt.attempted) {
 //       setTestSubmitted(true);
 //       setScore(test.attempt.attemptDetails.score);
-//       setDetailedResults(test.attempt.attemptDetails.detailedResults);
+//       setDetailedResults(test.attempt.attemptDetails.userAnswers);
+//       setAttemptDate(test.attempt.attemptDetails.attemptDate);
 //     } else {
 //       setTestSubmitted(false);
 //       setScore(null);
 //       setDetailedResults(null);
+//       setAttemptDate(null);
 //       const initialAnswers = test.quiz.reduce((acc, _, index) => {
 //         acc[index] = null;
 //         return acc;
@@ -280,13 +292,49 @@
 //         }
 //       );
 
-//       setScore(response.data.response.filter((q) => q.isCorrect).length * 10);
+//       if (
+//         !response.data ||
+//         !response.data.response ||
+//         !Array.isArray(response.data.response)
+//       ) {
+//         throw new Error("Invalid response format from server");
+//       }
+
+//       const correctAnswers = response.data.response.filter((q) => {
+//         const question = selectedTest.quiz[q.questionIndex];
+//         return question && question.correctAnswer === q.selectedAnswer;
+//       }).length;
+
+//       setScore(correctAnswers * 10);
 //       setDetailedResults(response.data.response);
 //       setTestSubmitted(true);
-//       await fetchTests(); // Refresh the tests after submission
+//       setAttemptDate(new Date().toISOString());
+
+//       // Update the test attempt in the tests array
+//       setTests((prevTests) =>
+//         prevTests.map((test) =>
+//           test._id === selectedTest._id
+//             ? {
+//                 ...test,
+//                 attempt: {
+//                   attempted: true,
+//                   attemptDetails: {
+//                     score: correctAnswers * 10,
+//                     userAnswers: response.data.response,
+//                     attemptDate: new Date().toISOString(),
+//                   },
+//                 },
+//               }
+//             : test
+//         )
+//       );
 //     } catch (error) {
 //       console.error("Error submitting test:", error);
 //       // Handle error (e.g., show an error message to the user)
+//       setScore(null);
+//       setDetailedResults(null);
+//       setTestSubmitted(false);
+//       setAttemptDate(null);
 //     } finally {
 //       setIsLoading(false);
 //     }
@@ -348,24 +396,21 @@
 //                 <div className="flex justify-center items-center h-64">
 //                   <LoadingText />
 //                 </div>
-//               ) : selectedTest.attempt && selectedTest.attempt.attempted ? (
+//               ) : testSubmitted ? (
 //                 <>
-//                   <AttemptInfo
-//                     attemptDate={
-//                       selectedTest.attempt.attemptDetails.attemptDate
-//                     }
-//                   />
+//                   {attemptDate && <AttemptInfo attemptDate={attemptDate} />}
 //                   <TestResultsDonutChart
-//                     score={selectedTest.attempt.attemptDetails.score}
+//                     score={score}
 //                     totalQuestions={selectedTest.quiz.length}
 //                   />
-//                   <DetailedTestResults
-//                     results={
-//                       selectedTest.attempt.attemptDetails.detailedResults
-//                     }
-//                   />
+//                   {detailedResults && (
+//                     <DetailedTestResults
+//                       results={detailedResults}
+//                       questions={selectedTest.quiz}
+//                     />
+//                   )}
 //                 </>
-//               ) : !testSubmitted ? (
+//               ) : (
 //                 <>
 //                   {selectedTest.quiz.map((question, questionIndex) => (
 //                     <Card key={questionIndex} className="mb-6">
@@ -416,16 +461,6 @@
 //                     </Button>
 //                   </div>
 //                 </>
-//               ) : (
-//                 <>
-//                   <TestResultsDonutChart
-//                     score={score}
-//                     totalQuestions={selectedTest.quiz.length}
-//                   />
-//                   {detailedResults && (
-//                     <DetailedTestResults results={detailedResults} />
-//                   )}
-//                 </>
 //               )}
 //             </div>
 //           ) : (
@@ -451,7 +486,6 @@
 // };
 
 // export default TestPage;
-
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { ChevronRightIcon, CheckCircle, XCircle, Calendar } from "lucide-react";
@@ -478,25 +512,27 @@ const COLORS = ["#A94442", "#FFA07A"];
 const TestResultsDonutChart = ({ score, totalQuestions }) => {
   const data = [
     { name: "Correct", value: score },
-    { name: "Incorrect", value: totalQuestions * 10 - score },
+    { name: "Incorrect", value: totalQuestions - score },
   ];
-
-  const percentage = Math.round((score / totalQuestions) * 100);
+  const percentage = Math.round(score * 10);
 
   return (
     <Card className="w-full max-w-3xl mx-auto mb-8">
       <CardHeader>
         <CardTitle className="text-2xl font-semibold text-[#A94442] text-center">
-          Test Results
+          {" "}
+          Test Results{" "}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center">
           <div className="text-4xl font-bold text-[#A94442] mb-4">
-            {percentage}%
+            {" "}
+            {percentage}%{" "}
           </div>
           <div className="text-lg text-gray-600 mb-6">
-            Score: {score} out of {totalQuestions}
+            {" "}
+            Score: {score} out of {totalQuestions}{" "}
           </div>
           <div className="w-full h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -529,6 +565,7 @@ const TestResultsDonutChart = ({ score, totalQuestions }) => {
 };
 
 const DetailedTestResults = ({ results, questions }) => {
+  // console.log("these are the results ", results);
   if (!results || results.length === 0) {
     return <div>No results available</div>;
   }
@@ -536,15 +573,19 @@ const DetailedTestResults = ({ results, questions }) => {
   return (
     <div className="space-y-6">
       <h3 className="text-2xl font-bold text-[#A94442] mb-4">
-        Detailed Results
+        {" "}
+        Detailed Results{" "}
       </h3>
       {results.map((result, index) => {
         const question = questions[result.questionIndex];
+
         if (!question) {
           console.error(`Question not found for index ${result.questionIndex}`);
           return null;
         }
+
         const isCorrect = result.selectedAnswer === question.correctAnswer;
+
         return (
           <Card
             key={index}
@@ -556,27 +597,33 @@ const DetailedTestResults = ({ results, questions }) => {
                   <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
                 ) : (
                   <XCircle className="w-6 h-6 text-red-500 mr-2" />
-                )}
-                Question {result.questionIndex + 1}
+                )}{" "}
+                Question {result.questionIndex + 1}{" "}
               </CardTitle>
             </CardHeader>
+
             <CardContent>
               <p className="mb-2">
-                <strong>Question:</strong> {question.question}
+                {" "}
+                <strong>Question:</strong> {question.question}{" "}
               </p>
               <p className="mb-2">
-                <strong>Your Answer:</strong> {result.selectedAnswer}
+                {" "}
+                <strong>Your Answer:</strong> {result.selectedAnswer}{" "}
               </p>
               <p className="mb-2">
-                <strong>Correct Answer:</strong> {question.correctAnswer}
+                {" "}
+                <strong>Correct Answer:</strong> {question.correctAnswer}{" "}
               </p>
+
               <p className="mt-4">
+                {" "}
                 <strong>Explanation:</strong>{" "}
                 {isCorrect
                   ? "Your answer is correct!"
                   : `The correct answer is "${question.correctAnswer}". ${
-                      question.explanation || ""
-                    }`}
+                      result.description || ""
+                    }`}{" "}
               </p>
             </CardContent>
           </Card>
@@ -591,8 +638,10 @@ const AttemptInfo = ({ attemptDate }) => {
     <Card className="w-full max-w-3xl mx-auto mb-8">
       <CardContent className="flex items-center justify-center p-4">
         <Calendar className="w-6 h-6 mr-2 text-[#A94442]" />
+
         <span className="text-lg font-semibold">
-          Attempted on: {new Date(attemptDate).toLocaleString()}
+          {" "}
+          Attempted on: {new Date(attemptDate).toLocaleString()}{" "}
         </span>
       </CardContent>
     </Card>
@@ -699,6 +748,7 @@ const TestPage = () => {
 
   const handleTestSelect = (test) => {
     setSelectedTest(test);
+
     if (test.attempt && test.attempt.attempted) {
       setTestSubmitted(true);
       setScore(test.attempt.attemptDetails.score);
@@ -709,19 +759,18 @@ const TestPage = () => {
       setScore(null);
       setDetailedResults(null);
       setAttemptDate(null);
+
       const initialAnswers = test.quiz.reduce((acc, _, index) => {
         acc[index] = null;
         return acc;
       }, {});
+
       setUserAnswers(initialAnswers);
     }
   };
 
   const handleAnswerSelect = (questionIndex, answer) => {
-    setUserAnswers({
-      ...userAnswers,
-      [questionIndex]: answer,
-    });
+    setUserAnswers({ ...userAnswers, [questionIndex]: answer });
   };
 
   const handleSubmitTest = async () => {
@@ -731,6 +780,7 @@ const TestPage = () => {
     }
 
     setIsLoading(true);
+
     try {
       const response = await axios.post(
         "http://localhost:9090/generate-responses",
@@ -756,11 +806,15 @@ const TestPage = () => {
 
       const correctAnswers = response.data.response.filter((q) => {
         const question = selectedTest.quiz[q.questionIndex];
+
         return question && question.correctAnswer === q.selectedAnswer;
       }).length;
+      // console.log(response.data.response);
+      // console.log(detailedResults);
 
       setScore(correctAnswers * 10);
       setDetailedResults(response.data.response);
+      console.log("this is it", detailedResults);
       setTestSubmitted(true);
       setAttemptDate(new Date().toISOString());
 
@@ -784,6 +838,7 @@ const TestPage = () => {
       );
     } catch (error) {
       console.error("Error submitting test:", error);
+
       // Handle error (e.g., show an error message to the user)
       setScore(null);
       setDetailedResults(null);
@@ -797,12 +852,15 @@ const TestPage = () => {
   return (
     <>
       <Navbar />
+
       <div className="flex h-screen bg-white">
         <div className="w-1/4 bg-gray-100 shadow-lg overflow-y-auto">
           <div className="p-6">
             <h2 className="text-2xl font-bold mb-6 text-[#A94442]">
-              Available Tests
+              {" "}
+              Available Tests{" "}
             </h2>
+
             <ul className="space-y-4">
               {tests.map((test) => (
                 <li
@@ -840,23 +898,34 @@ const TestPage = () => {
             </ul>
           </div>
         </div>
+
+        {/* Main content area */}
         <div className="flex-1 p-8 overflow-y-auto">
           {selectedTest ? (
+            // Selected Test View
             <div className="max-w-3xl mx-auto">
+              {/* Test Title */}
               <h2 className="text-3xl font-bold mb-6 text-[#A94442]">
                 {selectedTest.subject}: {selectedTest.topic}
               </h2>
+
+              {/* Loading or Results */}
               {isLoading ? (
+                // Loading Indicator
                 <div className="flex justify-center items-center h-64">
                   <LoadingText />
                 </div>
               ) : testSubmitted ? (
+                // Display Results
                 <>
+                  {/* Attempt Info */}
                   {attemptDate && <AttemptInfo attemptDate={attemptDate} />}
+                  {/* Donut Chart */}
                   <TestResultsDonutChart
                     score={score}
                     totalQuestions={selectedTest.quiz.length}
                   />
+                  {/* Detailed Results */}
                   {detailedResults && (
                     <DetailedTestResults
                       results={detailedResults}
@@ -865,21 +934,33 @@ const TestPage = () => {
                   )}
                 </>
               ) : (
+                // Display Questions
                 <>
+                  {/* Questions List */}
                   {selectedTest.quiz.map((question, questionIndex) => (
+                    // Each Question Card
                     <Card key={questionIndex} className="mb-6">
+                      {/* Question Header */}
                       <CardHeader>
+                        {/* Question Title */}
                         <CardTitle className="text-xl font-semibold text-[#A94442]">
                           Question {questionIndex + 1} of{" "}
                           {selectedTest.quiz.length}
                         </CardTitle>
                       </CardHeader>
+
+                      {/* Question Content */}
                       <CardContent>
+                        {/* Question Text */}
                         <p className="mb-4 text-lg text-gray-700">
                           {question.question}
                         </p>
+
+                        {/* Answer Options */}
                         <div className="space-y-3">
+                          {/* Options Mapping */}
                           {question.options.map((option, optionIndex) => (
+                            // Each Option Label
                             <label
                               key={optionIndex}
                               className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${
@@ -888,6 +969,7 @@ const TestPage = () => {
                                   : "hover:bg-gray-100"
                               }`}
                             >
+                              {/* Radio Input */}
                               <input
                                 type="radio"
                                 name={`question-${questionIndex}`}
@@ -898,6 +980,7 @@ const TestPage = () => {
                                 }
                                 className="form-radio h-5 w-5 text-[#A94442]"
                               />
+                              {/* Option Text */}
                               <span className="ml-2">{option}</span>
                             </label>
                           ))}
@@ -905,11 +988,14 @@ const TestPage = () => {
                       </CardContent>
                     </Card>
                   ))}
+
+                  {/* Submit Button */}
                   <div className="flex justify-end mb-8">
+                    {/* Submit Test Button */}
                     <Button
                       onClick={handleSubmitTest}
-                      className="px-6 py-2 bg-[#A94442] text-white rounded-lg font-semibold hover:bg-[#923A38] transition-colors duration-200"
                       disabled={isLoading}
+                      className={`px-6 py-2 bg-[#A94442] text-white rounded-lg font-semibold hover:bg-[#923A38] transition-colors duration-200`}
                     >
                       Submit Test
                     </Button>
@@ -918,14 +1004,22 @@ const TestPage = () => {
               )}
             </div>
           ) : (
+            // Default State
+            // Welcome Message
             <div className="flex items-center justify-center h-full">
+              {/* Welcome Card */}
               <Card className="text-center p-8">
+                {/* Welcome Header */}
                 <CardHeader>
+                  {/* Welcome Title */}
                   <CardTitle className="text-2xl font-semibold text-[#A94442] mb-4">
                     Welcome to the Test Platform
                   </CardTitle>
                 </CardHeader>
+
+                {/* Welcome Content */}
                 <CardContent>
+                  {/* Instruction Text */}
                   <p className="text-gray-600">
                     Select a test from the left sidebar to begin.
                   </p>
